@@ -1,0 +1,170 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --color-neon-cyan: #00f2ff;
+  --color-neon-purple: #7000ff;
+  --color-obsidian: #050505;
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-obsidian text-white font-sans antialiased selection:bg-neon-cyan/30;
+  }
+
+  /* Light Mode */
+  body:not(.dark) {
+    @apply bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 text-slate-900;
+    color-scheme: light;
+  }
+
+  body:not(.dark) * {
+    @apply selection:bg-neon-cyan/20 selection:text-slate-900;
+  }
+
+  /* Dark Mode */
+  .dark body {
+    @apply bg-obsidian text-white selection:bg-neon-cyan/30;
+    color-scheme: dark;
+  }
+}
+
+@layer components {
+  /* Light Mode - Glass Components */
+  body:not(.dark) .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow;
+  }
+
+  /* Light Mode - Text Colors */
+  body:not(.dark) .text-white {
+    @apply text-slate-900;
+  }
+
+  body:not(.dark) .text-white\/60 {
+    @apply text-slate-600;
+  }
+
+  body:not(.dark) .text-white\/70 {
+    @apply text-slate-700;
+  }
+
+  body:not(.dark) .text-white\/50 {
+    @apply text-slate-500;
+  }
+
+  body:not(.dark) .text-white\/40 {
+    @apply text-slate-400;
+  }
+
+  body:not(.dark) .text-white\/30 {
+    @apply text-slate-300;
+  }
+
+  body:not(.dark) .text-white\/20 {
+    @apply text-slate-200;
+  }
+
+  body:not(.dark) .text-white\/10 {
+    @apply text-slate-100;
+  }
+
+  /* Light Mode - Borders */
+  body:not(.dark) .border-white\/5 {
+    @apply border-slate-200;
+  }
+
+  body:not(.dark) .border-white\/10 {
+    @apply border-slate-300;
+  }
+
+  body:not(.dark) .border-white\/20 {
+    @apply border-slate-400;
+  }
+
+  /* Light Mode - Background Colors */
+  body:not(.dark) .bg-white\/5 {
+    @apply bg-slate-100/60;
+  }
+
+  body:not(.dark) .bg-white\/10 {
+    @apply bg-slate-200/60;
+  }
+
+  body:not(.dark) .bg-obsidian {
+    @apply bg-slate-900;
+  }
+
+  /* Light Mode - Background Effects */
+  body:not(.dark) .bg-neon-cyan\/10 {
+    @apply bg-cyan-100/40;
+  }
+
+  body:not(.dark) .bg-neon-cyan\/5 {
+    @apply bg-cyan-50/60;
+  }
+
+  body:not(.dark) .bg-neon-cyan\/20 {
+    @apply bg-cyan-100/50;
+  }
+
+  body:not(.dark) .bg-neon-purple\/10 {
+    @apply bg-purple-100/40;
+  }
+
+  body:not(.dark) .bg-neon-purple\/20 {
+    @apply bg-purple-100/50;
+  }
+
+  /* Light Mode - Neural Grid */
+  body:not(.dark) .neural-grid {
+    @apply opacity-5;
+  }
+
+  /* Light Mode - Interactive Elements */
+  body:not(.dark) button:not(.bg-neon-cyan) {
+    @apply text-slate-900 border-slate-300 hover:border-slate-400;
+  }
+
+  body:not(.dark) a {
+    @apply text-slate-900;
+  }
+
+  body:not(.dark) a:hover {
+    @apply text-neon-cyan;
+  }
+
+  body:not(.dark) .font-display {
+    @apply font-bold text-slate-900;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-md bg-white/5 border border-white/10;
+  }
+  
+  .neon-glow {
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-neon-cyan to-neon-purple;
+  }
+
+  body:not(.dark) .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600;
+  }
+
+  .neural-grid {
+    background-image: 
+      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
