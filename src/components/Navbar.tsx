@@ -1,12 +1,27 @@
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Terminal, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '../lib/utils';
-import { ThemeSwitcher } from './ThemeSwitcher';
+import { MascotWatcher } from './MascotWatcher';
 
-export const Navbar = () => {
+type NavbarThemeAccent = {
+  id: string;
+  label: string;
+};
+
+interface NavbarProps {
+  theme: NavbarThemeAccent;
+  onThemeChipClick: () => void;
+}
+
+export const Navbar = ({ theme, onThemeChipClick }: NavbarProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleThemeChipClick = () => {
+    window.dispatchEvent(new CustomEvent('mascot-theme-changing'));
+    onThemeChipClick();
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -25,47 +40,73 @@ export const Navbar = () => {
     <nav
       className={cn(
         'fixed top-0 z-50 w-full transition-all duration-300 px-6 py-4',
-        isScrolled ? 'glass py-3' : 'bg-transparent'
+        isScrolled ? 'glass nav-surface py-3' : 'bg-transparent'
       )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <motion.div 
+      <div className="flex w-full items-center justify-between">
+        <motion.a
+          href="#home"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-2"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neon-cyan/20 dark:bg-neon-cyan/20 text-neon-cyan dark:text-neon-cyan">
+          <div className="icon-well flex h-10 w-10 items-center justify-center rounded-lg bg-neon-cyan/20 dark:bg-neon-cyan/20 text-neon-cyan dark:text-neon-cyan">
             <Terminal size={24} />
           </div>
-          <span className="font-display text-xl font-bold tracking-tighter uppercase text-slate-900 dark:text-white">
-            inventyfie<span className="text-neon-cyan dark:text-neon-cyan">.</span>
+          <span
+            className="theme-text-primary font-display text-xl font-bold tracking-tighter uppercase text-slate-900 dark:text-white transition-colors duration-[3200ms] ease-in-out"
+            style={{ color: 'var(--theme-brand-color)' }}
+          >
+            inventyfie<span style={{ color: 'var(--theme-brand-color)' }}>.</span>
           </span>
-        </motion.div>
+        </motion.a>
 
         {/* Desktop Nav */}
-        <div className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              className="text-sm font-medium text-slate-700 dark:text-white/70 transition-colors hover:text-neon-cyan dark:hover:text-neon-cyan"
+        <div className="hidden md:flex md:flex-1 md:items-center md:justify-end">
+          <div className="mr-6 flex items-center gap-8">
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="nav-text theme-link-hover text-sm font-medium text-slate-700 dark:text-white/70"
+              >
+                {link.name}
+              </a>
+            ))}
+          </div>
+          <div className="relative flex items-center gap-3 justify-end">
+            <MascotWatcher />
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              className="accent-button h-10 w-[124px] rounded-full px-6 py-2 text-sm font-bold text-white transition-all duration-[3200ms] ease-in-out hover:brightness-110"
+              style={{
+                backgroundImage: 'linear-gradient(120deg, var(--theme-button-from), var(--theme-button-to))',
+                boxShadow: '0 0 18px var(--theme-button-glow)',
+              }}
             >
-              {link.name}
-            </a>
-          ))}
-          <ThemeSwitcher />
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="rounded-full bg-neon-cyan px-6 py-2 text-sm font-bold text-obsidian shadow-[0_0_15px_rgba(0,242,255,0.4)] transition-all hover:shadow-[0_0_25px_rgba(0,242,255,0.6)]"
-          >
-            Hire Me
-          </motion.button>
+              Hire Me
+            </motion.button>
+            <div className="relative h-8 w-[152px] shrink-0">
+              <AnimatePresence mode="sync">
+                <motion.button
+                  key={`navbar-theme-chip-${theme.id}`}
+                  onClick={handleThemeChipClick}
+                  initial={{ opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, filter: 'blur(3px)' }}
+                  transition={{ duration: 2.2, ease: 'easeInOut' }}
+                  className="absolute inset-0 flex items-center justify-center whitespace-nowrap rounded-full border border-white/25 bg-black/35 px-3 py-1 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-white/90 shadow-[0_8px_28px_rgba(0,0,0,0.3)] backdrop-blur-md transition-colors hover:border-white/50"
+                >
+                  {theme.label}
+                </motion.button>
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
 
         {/* Mobile Toggle */}
         <button 
-          className="md:hidden text-white dark:text-white"
+          className="nav-text md:hidden text-white dark:text-white"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -77,22 +118,31 @@ export const Navbar = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute left-0 top-full w-full glass p-6 md:hidden"
+          className="absolute left-0 top-full w-full glass nav-surface p-6 md:hidden"
         >
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
-                className="text-lg font-medium text-slate-700 dark:text-white/70"
+                className="nav-text text-lg font-medium text-slate-700 dark:text-white/70"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 {link.name}
               </a>
             ))}
-            <button className="w-full rounded-xl bg-neon-cyan py-3 font-bold text-obsidian dark:text-obsidian">
-              Hire Me
-            </button>
+            <div className="flex items-end justify-between gap-4">
+              <MascotWatcher />
+              <button
+                className="accent-button w-full rounded-xl py-3 font-bold text-white transition-all duration-[3200ms] ease-in-out"
+                style={{
+                  backgroundImage: 'linear-gradient(120deg, var(--theme-button-from), var(--theme-button-to))',
+                  boxShadow: '0 0 16px var(--theme-button-glow)',
+                }}
+              >
+                Hire Me
+              </button>
+            </div>
           </div>
         </motion.div>
       )}

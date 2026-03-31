@@ -13,7 +13,7 @@ export const ThemeSwitcher = () => {
   ];
 
   return (
-    <div className="flex items-center gap-2 rounded-full bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 p-1.5">
+    <div className="switcher-shell flex items-center gap-2 rounded-full bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 p-1.5">
       {themes.map(({ value, icon: Icon, label }) => (
         <motion.button
           key={value}
@@ -23,7 +23,7 @@ export const ThemeSwitcher = () => {
           className={cn(
             'relative p-2 rounded-full transition-all duration-300',
             theme === value
-              ? 'bg-neon-cyan/20 text-neon-cyan dark:bg-neon-cyan/20 dark:text-neon-cyan'
+              ? 'switcher-active bg-neon-cyan/20 text-neon-cyan dark:bg-neon-cyan/20 dark:text-neon-cyan'
               : 'text-slate-600 dark:text-white/50 hover:text-slate-900 dark:hover:text-white/70'
           )}
           title={label}
