@@ -33,10 +33,10 @@ export const AcademyCard: FC<AcademyCardProps> = ({ topic, index }) => {
       transition={{ delay: index * 0.1, duration: 0.5 }}
       viewport={{ once: true }}
       whileHover={{ y: -5 }}
-      className="group glass rounded-2xl p-8 h-full flex flex-col justify-between hover:bg-white/10 dark:hover:bg-white/10 transition-all cursor-pointer border border-white/5 dark:border-white/5 hover:border-neon-cyan/30 dark:hover:border-neon-cyan/30"
+      className="group theme-card-hover glass section-panel rounded-2xl p-8 h-full flex flex-col justify-between hover:bg-white/10 dark:hover:bg-white/10 transition-all cursor-pointer border border-white/5 dark:border-white/5"
     >
       <div className="flex items-start justify-between mb-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-neon-cyan/10 dark:bg-neon-cyan/10 text-neon-cyan dark:text-neon-cyan">
+        <div className="icon-well flex h-12 w-12 items-center justify-center rounded-lg bg-neon-cyan/10 dark:bg-neon-cyan/10 text-neon-cyan dark:text-neon-cyan">
           <Terminal size={24} />
         </div>
         <span className={cn(
@@ -48,24 +48,24 @@ export const AcademyCard: FC<AcademyCardProps> = ({ topic, index }) => {
       </div>
 
       <div className="mb-6">
-        <span className="text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-white/50 mb-2 block">
+        <span className="theme-text-secondary text-xs font-bold uppercase tracking-widest text-slate-600 dark:text-white/50 mb-2 block">
           {topic.category}
         </span>
-        <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white group-hover:text-neon-cyan transition-colors">
+        <h3 className="theme-text-primary theme-title-hover text-xl font-bold mb-3 text-slate-900 dark:text-white transition-colors">
           {topic.title}
         </h3>
-        <p className="text-slate-600 dark:text-white/60 text-sm leading-relaxed">
+        <p className="theme-text-secondary text-slate-600 dark:text-white/60 text-sm leading-relaxed">
           {topic.description}
         </p>
       </div>
 
       <div className="flex items-center justify-between pt-6 border-t border-slate-300 dark:border-white/5">
-        <span className="text-xs text-slate-500 dark:text-white/40">
+        <span className="theme-text-muted text-xs text-slate-500 dark:text-white/40">
           {topic.readTime} min read
         </span>
         <ArrowRight 
           size={18} 
-          className="text-slate-500 dark:text-white/40 group-hover:text-neon-cyan group-hover:translate-x-1 transition-all" 
+          className="theme-arrow-hover text-slate-500 dark:text-white/40 group-hover:translate-x-1 transition-all" 
         />
       </div>
     </motion.a>
