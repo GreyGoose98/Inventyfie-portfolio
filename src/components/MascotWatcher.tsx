@@ -32,6 +32,7 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
   const hopResetRef = useRef<number | null>(null);
   const returnResetRef = useRef<number | null>(null);
   const speechTimeoutRef = useRef<number | null>(null);
+  const lastNoteAtRef = useRef<number>(0);
 
   const [isBlinking, setIsBlinking] = useState(false);
   const [isNear, setIsNear] = useState(false);
@@ -39,39 +40,48 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
   const [runX, setRunX] = useState(0);
   const [hopY, setHopY] = useState(0);
   const [speechText, setSpeechText] = useState<string | null>(null);
+  const [speechSide, setSpeechSide] = useState<1 | -1>(1);
   const [notes, setNotes] = useState<Array<{id: number; text: string; x: number; y: number; drift: number}>>([]);
 
-  const spawnFloatingNote = useCallback((phrases: string[], sideHint?: 1 | -1) => {
+  const spawnFloatingNote = useCallback((phrases: string[], sideHint?: 1 | -1, force = false) => {
     if (!ref.current) {
       return;
     }
 
+    const now = Date.now();
+    if (!force && now - lastNoteAtRef.current < 950) {
+      return;
+    }
+    lastNoteAtRef.current = now;
+
     const rect = ref.current.getBoundingClientRect();
     const id = Date.now() + Math.random();
     const side = sideHint ?? (Math.random() > 0.5 ? 1 : -1);
-    const offsetX = (rect.width / 2 + 12 + Math.random() * 18) * side;
+    const offsetX = (rect.width * 0.48 + 8) * side;
+    const headY = Math.max(rect.top + rect.height * 0.34, 88);
 
     const newNote = {
       id,
       text: phrases[Math.floor(Math.random() * phrases.length)],
       x: rect.left + rect.width / 2 + offsetX,
-      y: rect.top + 24,
-      drift: side > 0 ? 24 : -24,
+      y: headY,
+      drift: side > 0 ? 4 : -4,
     };
 
     setNotes((prev) => [...prev, newNote]);
     setSpeechText(newNote.text);
+    setSpeechSide(side);
     if (speechTimeoutRef.current !== null) {
       window.clearTimeout(speechTimeoutRef.current);
     }
     speechTimeoutRef.current = window.setTimeout(() => {
       setSpeechText(null);
       speechTimeoutRef.current = null;
-    }, 1300);
+    }, 3400);
 
     window.setTimeout(() => {
       setNotes((prev) => prev.filter((n) => n.id !== id));
-    }, 1500);
+    }, 3800);
   }, []);
 
   useEffect(() => {
@@ -110,6 +120,13 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
       const dyToCursor = targetPos.current.y - faceCenterY;
       const distRaw = Math.hypot(dxToCursor, dyToCursor);
       const lookAheadSeconds = 0.11;
+      const idleForMs = performance.now() - lastMoveTimeRef.current;
+      if (idleForMs > 120) {
+        cursorVelocityRef.current = {
+          x: cursorVelocityRef.current.x * 0.86,
+          y: cursorVelocityRef.current.y * 0.86,
+        };
+      }
       const projectedCursorX = targetPos.current.x + cursorVelocityRef.current.x * lookAheadSeconds;
       const projectedCursorY = targetPos.current.y + cursorVelocityRef.current.y * lookAheadSeconds;
       const dxProjected = projectedCursorX - faceCenterX;
@@ -132,7 +149,7 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
         ) > 14;
       const shouldDodge =
         (distRaw < 230 || distProjected < 295) &&
-        (cursorSpeed > 30 || movedSinceLastDodge || distRaw < 62);
+        (cursorSpeed > 30 || movedSinceLastDodge);
 
       if (pointerIsActive && mode === 'idle' && shouldDodge && Date.now() > runCooldownRef.current) {
         runCooldownRef.current = Date.now() + 130;
@@ -226,7 +243,7 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
       if (mode !== 'idle') {
         return;
       }
-      spawnFloatingNote(['Theme changing...']);
+      spawnFloatingNote(['Theme changing...'], undefined, true);
     };
 
     window.addEventListener('mascot-theme-changing', handleThemeChanging);
@@ -255,7 +272,7 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
       const spawnNote = () => spawnFloatingNote(phrases);
 
       spawnNote();
-      interval = window.setInterval(spawnNote, isRunning ? 520 : 900);
+      interval = window.setInterval(spawnNote, isRunning ? 1700 : 2400);
     }
 
     return () => {
@@ -406,14 +423,20 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
               initial={{opacity: 0, scale: 0.5, y: note.y, x: note.x}}
               animate={{
                 opacity: [0, 1, 1, 0],
-                scale: [0.5, 1.2, 1],
-                y: note.y - 80,
+                scale: [0.92, 1, 1],
+                y: note.y - 8,
                 x: note.x + note.drift,
               }}
               exit={{opacity: 0}}
-              transition={{duration: 1.2, ease: 'easeOut'}}
-              className="pointer-events-none fixed z-[99999] select-none whitespace-nowrap rounded-full border border-white/35 bg-black/65 px-2 py-0.5 font-black text-amber-200 text-sm backdrop-blur-sm"
-              style={{textShadow: '0 1px 0 rgba(0, 0, 0, 0.7)'}}
+              transition={{duration: 2.9, ease: 'easeOut'}}
+              className="pointer-events-none fixed z-[99999] select-none whitespace-nowrap rounded-full px-2 py-0.5 font-black text-sm backdrop-blur-sm"
+              style={{
+                border: '1px solid color-mix(in srgb, var(--theme-highlight-color) 48%, rgba(255, 255, 255, 0.28))',
+                background: 'color-mix(in srgb, var(--theme-highlight-color) 18%, rgba(8, 12, 22, 0.82))',
+                color: 'color-mix(in srgb, var(--theme-highlight-color) 68%, #fff3cd)',
+                textShadow: '0 1px 0 rgba(0, 0, 0, 0.68)',
+                transition: 'background-color 3200ms ease, border-color 3200ms ease, color 3200ms ease',
+              }}
             >
               {note.text}
             </motion.div>
@@ -436,8 +459,16 @@ export const MascotWatcher: React.FC<MascotWatcherProps> = ({
               initial={{opacity: 0, y: 8, scale: 0.94}}
               animate={{opacity: 1, y: 0, scale: 1}}
               exit={{opacity: 0, y: -8, scale: 0.96}}
-              transition={{duration: 0.24, ease: 'easeOut'}}
-              className="pointer-events-none absolute -top-8 left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-full border border-white/40 bg-black/70 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-200 backdrop-blur-sm"
+              transition={{duration: 0.34, ease: 'easeOut'}}
+              className={`pointer-events-none absolute top-[30%] z-[60] whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide backdrop-blur-sm ${
+                speechSide > 0 ? 'left-full ml-1' : 'right-full mr-1'
+              }`}
+              style={{
+                border: '1px solid color-mix(in srgb, var(--theme-highlight-color) 48%, rgba(255, 255, 255, 0.28))',
+                background: 'color-mix(in srgb, var(--theme-highlight-color) 18%, rgba(8, 12, 22, 0.84))',
+                color: 'color-mix(in srgb, var(--theme-highlight-color) 68%, #fff3cd)',
+                transition: 'background-color 3200ms ease, border-color 3200ms ease, color 3200ms ease',
+              }}
             >
               {speechText}
             </motion.div>
