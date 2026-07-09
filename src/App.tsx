@@ -3,25 +3,44 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { 
-  ArrowRight, 
-  Cpu, 
-  Brain, 
-  Zap, 
-  Mail, 
-  Linkedin, 
-  Twitter, 
+import {
+  ArrowRight,
+  Brain,
+  ChevronDown,
+  Cpu,
   Github,
-  ChevronDown 
+  Linkedin,
+  Mail,
+  Twitter,
+  Zap,
 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Section } from './components/Section';
-import { ProjectCard, Project } from './components/ProjectCard';
-import { AcademyCard, AcademyTopic } from './components/AcademyCard';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { cn } from './lib/utils';
+import {
+  ABOUT_CONTENT,
+  BENCHMARK_STUDIES,
+  CASE_STUDIES,
+  CASE_STUDY_INDUSTRIES,
+  CmsEntry,
+  DECISION_FRAMEWORKS,
+  ENGINEERING_PROJECTS,
+  FUTURE_MODULES,
+  NAV_LINKS,
+  OPEN_SOURCE_ITEMS,
+  RESEARCH_INVESTIGATIONS,
+  RESEARCH_JOURNAL,
+  RESEARCH_LIBRARY_CATEGORIES,
+  RESOURCE_ITEMS,
+} from './data/platformContent';
+import { MetadataStrip } from './components/MetadataStrip';
+import { SearchDocument, SearchExplorer } from './components/SearchExplorer';
+import { loadCmsEntries, saveCmsEntries } from './lib/cms';
+import { MarkdownRenderer } from './components/MarkdownRenderer';
+
+const AdminPanel = lazy(() => import('./components/AdminPanel').then((mod) => ({ default: mod.AdminPanel })));
 
 type BackgroundTheme = {
   id: string;
@@ -177,83 +196,34 @@ const BACKGROUND_THEMES: BackgroundTheme[] = [
   },
 ];
 
-const PROJECTS: Project[] = [
-  {
-    title: "NeuralVision AI",
-    description: "Real-time object detection and behavioral analysis system for industrial safety monitoring.",
-    tags: ["PyTorch", "Computer Vision", "Edge Computing"],
-    icon: "cpu",
-    image: "https://picsum.photos/seed/ai1/800/600"
-  },
-  {
-    title: "Linguist Pro",
-    description: "Next-gen NLP engine optimized for low-latency multilingual translation and sentiment analysis.",
-    tags: ["Transformers", "FastAPI", "Redis"],
-    icon: "brain",
-    image: "https://picsum.photos/seed/ai2/800/600"
-  },
-  {
-    title: "QuantumPredict",
-    description: "Financial market prediction model using hybrid classical-quantum machine learning algorithms.",
-    tags: ["TensorFlow", "Quantum Computing", "Finance"],
-    icon: "zap",
-    image: "https://picsum.photos/seed/ai3/800/600"
-  }
-];
+function sectionSchema() {
+  const siteUrl = import.meta.env.VITE_SITE_URL || 'https://inventyfie.com';
 
-const ACADEMY_TOPICS: AcademyTopic[] = [
-  {
-    id: "llm-fundamentals",
-    title: "LLM Fundamentals",
-    description: "Master the core concepts of Large Language Models, from transformer architecture to fine-tuning techniques.",
-    category: "Machine Learning",
-    difficulty: "Beginner",
-    readTime: 12
-  },
-  {
-    id: "computer-vision",
-    title: "Computer Vision Essentials",
-    description: "Learn image processing, CNNs, and real-world applications of computer vision in production systems.",
-    category: "AI & Deep Learning",
-    difficulty: "Intermediate",
-    readTime: 18
-  },
-  {
-    id: "prompt-engineering",
-    title: "Advanced Prompt Engineering",
-    description: "Techniques to optimize LLM outputs, chain-of-thought prompting, and building intelligent agents.",
-    category: "AI Operations",
-    difficulty: "Intermediate",
-    readTime: 15
-  },
-  {
-    id: "rag-systems",
-    title: "Retrieval-Augmented Generation",
-    description: "Build scalable RAG systems that combine retrieval and generation for domain-specific AI solutions.",
-    category: "Advanced AI",
-    difficulty: "Advanced",
-    readTime: 25
-  },
-  {
-    id: "ml-deployment",
-    title: "ML Model Deployment & Scaling",
-    description: "Production-ready deployment strategies, containerization, and scaling ML models at enterprise level.",
-    category: "DevOps & Infrastructure",
-    difficulty: "Advanced",
-    readTime: 20
-  },
-  {
-    id: "data-engineering",
-    title: "Data Pipelines for AI",
-    description: "Design and implement robust data engineering pipelines that power modern AI applications.",
-    category: "Data Engineering",
-    difficulty: "Intermediate",
-    readTime: 16
-  }
-];
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ResearchOrganization',
+    name: 'Inventyfie',
+    description: 'AI Engineering Research Lab publishing practical benchmarks, case studies, and architecture guides.',
+    url: siteUrl,
+    sameAs: ['https://github.com/inventyfie'],
+    areaServed: 'Global',
+    foundingDate: '2026',
+    knowsAbout: [
+      'AI Engineering',
+      'Machine Learning',
+      'RAG',
+      'Decision Intelligence',
+      'Benchmarking',
+      'Architecture',
+    ],
+  };
+}
+
+const sectionTitleClass = 'theme-text-primary mb-4 font-display text-4xl font-bold md:text-6xl text-slate-900 dark:text-white';
 
 export default function App() {
   const [backgroundThemeIndex, setBackgroundThemeIndex] = useState(0);
+  const [cmsEntries, setCmsEntries] = useState<CmsEntry[]>(() => loadCmsEntries());
 
   const chooseRandomThemeIndex = useCallback((current: number) => {
     if (BACKGROUND_THEMES.length < 2) {
@@ -278,19 +248,175 @@ export default function App() {
       const nextInMs = 10000 + Math.random() * 9000;
       cycleTimer = window.setTimeout(() => {
         setBackgroundThemeIndex((prev) => chooseRandomThemeIndex(prev));
-
         scheduleNextTheme();
       }, nextInMs);
     };
 
     scheduleNextTheme();
-
-    return () => {
-      window.clearTimeout(cycleTimer);
-    };
+    return () => window.clearTimeout(cycleTimer);
   }, [chooseRandomThemeIndex]);
 
+  useEffect(() => {
+    saveCmsEntries(cmsEntries);
+  }, [cmsEntries]);
+
+  useEffect(() => {
+    const siteUrl = import.meta.env.VITE_SITE_URL || 'https://inventyfie.com';
+
+    document.title = 'Inventyfie | AI Engineering Research Lab';
+
+    const setMeta = (name: string, content: string, property = false) => {
+      const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
+      let node = document.head.querySelector(selector) as HTMLMetaElement | null;
+      if (!node) {
+        node = document.createElement('meta');
+        if (property) {
+          node.setAttribute('property', name);
+        } else {
+          node.setAttribute('name', name);
+        }
+        document.head.appendChild(node);
+      }
+      node.content = content;
+    };
+
+    const description = 'AI Engineering Research Platform for benchmarks, case studies, architecture guides, and decision frameworks.';
+    setMeta('description', description);
+    setMeta('keywords', 'AI engineering, benchmarks, case studies, RAG, LLMs, AI agents, architecture, decision frameworks');
+    setMeta('robots', 'index, follow');
+    setMeta('og:title', 'Inventyfie | AI Engineering Research Lab', true);
+    setMeta('og:description', description, true);
+    setMeta('og:type', 'website', true);
+    setMeta('og:url', siteUrl, true);
+    setMeta('twitter:card', 'summary_large_image');
+    setMeta('twitter:title', 'Inventyfie | AI Engineering Research Lab');
+    setMeta('twitter:description', description);
+
+    let canonical = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = siteUrl;
+
+    const schemaId = 'inventyfie-schema';
+    let schemaNode = document.getElementById(schemaId) as HTMLScriptElement | null;
+    if (!schemaNode) {
+      schemaNode = document.createElement('script');
+      schemaNode.type = 'application/ld+json';
+      schemaNode.id = schemaId;
+      document.head.appendChild(schemaNode);
+    }
+    schemaNode.textContent = JSON.stringify(sectionSchema());
+  }, []);
+
   const activeBackgroundTheme = BACKGROUND_THEMES[backgroundThemeIndex] ?? BACKGROUND_THEMES[0];
+  const heroInvestigation = RESEARCH_INVESTIGATIONS[0];
+
+  const searchDocs = useMemo<SearchDocument[]>(() => {
+    const docs: SearchDocument[] = [];
+
+    RESEARCH_INVESTIGATIONS.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: 'Research',
+        title: item.title,
+        summary: item.researchQuestion,
+        sectionHref: '#research',
+        metadata: item.metadata,
+        searchableContent: [item.background, item.businessProblem, item.methodology, item.results.join(' ')].join(' '),
+      });
+    });
+
+    ENGINEERING_PROJECTS.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: 'Engineering',
+        title: item.title,
+        summary: item.problemStatement,
+        sectionHref: '#engineering',
+        metadata: item.metadata,
+        searchableContent: [item.implementationDetails, item.businessValue, item.technologyStack.join(' ')].join(' '),
+      });
+    });
+
+    CASE_STUDIES.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: 'Case Studies',
+        title: item.title,
+        summary: item.businessProblem,
+        sectionHref: '#case-studies',
+        metadata: item.metadata,
+        searchableContent: [item.recommendedSolution, item.aiOpportunity, item.benefits.join(' ')].join(' '),
+      });
+    });
+
+    BENCHMARK_STUDIES.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: 'Benchmarks',
+        title: item.title,
+        summary: item.finalRecommendation,
+        sectionHref: '#benchmarks',
+        metadata: item.metadata,
+        searchableContent: [item.dataset, item.environment, item.results.join(' '), item.metrics.join(' ')].join(' '),
+      });
+    });
+
+    DECISION_FRAMEWORKS.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: 'Decision Frameworks',
+        title: item.title,
+        summary: item.recommendedArchitecture,
+        sectionHref: '#decision-frameworks',
+        metadata: item.metadata,
+        searchableContent: [item.businessConsiderations.join(' '), item.technicalConsiderations.join(' ')].join(' '),
+      });
+    });
+
+    OPEN_SOURCE_ITEMS.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: 'Open Source',
+        title: item.title,
+        summary: item.summary,
+        sectionHref: '#open-source',
+        metadata: item.metadata,
+        searchableContent: `${item.kind} ${item.link}`,
+      });
+    });
+
+    RESOURCE_ITEMS.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: 'Resources',
+        title: item.title,
+        summary: item.summary,
+        sectionHref: '#resources',
+        metadata: item.metadata,
+        searchableContent: `${item.kind} ${item.link}`,
+      });
+    });
+
+    cmsEntries.forEach((item) => {
+      docs.push({
+        id: item.id,
+        kind: item.contentType,
+        title: item.title,
+        summary: item.summary,
+        sectionHref: '#admin',
+        metadata: item.metadata,
+        searchableContent: item.markdown,
+      });
+    });
+
+    return docs;
+  }, [cmsEntries]);
+
+  const iconByIndex = [Cpu, Brain, Zap];
 
   return (
     <ThemeProvider>
@@ -307,271 +433,550 @@ export default function App() {
         }
         transition={{ duration: 3.2, ease: 'easeInOut' }}
       >
-      {/* Background Effects */}
-      <div className="fixed inset-0 z-0 overflow-hidden">
-        <AnimatePresence mode="sync">
+        <div className="fixed inset-0 z-0 overflow-hidden">
+          <AnimatePresence mode="sync">
+            <motion.div
+              key={`theme-backdrop-${activeBackgroundTheme.id}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2.8, ease: 'easeInOut' }}
+              className="absolute inset-0"
+              style={{ background: activeBackgroundTheme.backdrop }}
+            />
+          </AnimatePresence>
+
+          <AnimatePresence mode="sync">
+            <motion.div
+              key={`theme-overlay-${activeBackgroundTheme.id}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 3.2, ease: 'easeInOut' }}
+              className="absolute inset-0"
+              style={{ background: activeBackgroundTheme.overlay, mixBlendMode: 'screen' }}
+            />
+          </AnimatePresence>
+
           <motion.div
-            key={`theme-backdrop-${activeBackgroundTheme.id}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.8, ease: 'easeInOut' }}
-            className="absolute inset-0"
-            style={{ background: activeBackgroundTheme.backdrop }}
+            className="neural-grid absolute inset-0"
+            animate={{ opacity: activeBackgroundTheme.gridOpacity }}
+            transition={{ duration: 2.6, ease: 'easeInOut' }}
           />
-        </AnimatePresence>
 
-        <AnimatePresence mode="sync">
-          <motion.div
-            key={`theme-overlay-${activeBackgroundTheme.id}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 3.2, ease: 'easeInOut' }}
-            className="absolute inset-0"
-            style={{ background: activeBackgroundTheme.overlay, mixBlendMode: 'screen' }}
-          />
-        </AnimatePresence>
+          <AnimatePresence mode="sync">
+            <motion.div
+              key={`theme-orbits-${activeBackgroundTheme.id}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2.8, ease: 'easeInOut' }}
+              className="absolute inset-0 pointer-events-none"
+            >
+              <div className="orb-orbit absolute inset-[-18%]">
+                <div
+                  className="orb-theme-blob absolute left-1/2 top-[3%] h-[72%] w-[72%] -translate-x-1/2 rounded-full blur-[112px]"
+                  style={{ background: activeBackgroundTheme.orbA }}
+                />
+              </div>
+              <div className="orb-orbit orb-orbit-opposite absolute inset-[-18%]">
+                <div
+                  className="orb-theme-blob absolute left-1/2 top-[3%] h-[72%] w-[72%] -translate-x-1/2 rounded-full blur-[112px]"
+                  style={{ background: activeBackgroundTheme.orbB }}
+                />
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
-        <motion.div
-          className="neural-grid absolute inset-0"
-          animate={{ opacity: activeBackgroundTheme.gridOpacity }}
-          transition={{ duration: 2.6, ease: 'easeInOut' }}
-        />
+          <AnimatePresence mode="sync">
+            <motion.div
+              key={`theme-spark-${activeBackgroundTheme.id}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 3.4, ease: 'easeInOut' }}
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: activeBackgroundTheme.spark }}
+            />
+          </AnimatePresence>
+        </div>
 
-        <AnimatePresence mode="sync">
-          <motion.div
-            key={`theme-orbits-${activeBackgroundTheme.id}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.8, ease: 'easeInOut' }}
-            className="absolute inset-0 pointer-events-none"
-          >
-            <div className="orb-orbit absolute inset-[-18%]">
-              <div
-                className="orb-theme-blob absolute left-1/2 top-[3%] h-[72%] w-[72%] -translate-x-1/2 rounded-full blur-[112px]"
-                style={{ background: activeBackgroundTheme.orbA }}
-              />
-            </div>
-            <div className="orb-orbit orb-orbit-opposite absolute inset-[-18%]">
-              <div
-                className="orb-theme-blob absolute left-1/2 top-[3%] h-[72%] w-[72%] -translate-x-1/2 rounded-full blur-[112px]"
-                style={{ background: activeBackgroundTheme.orbB }}
-              />
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        <AnimatePresence mode="sync">
-          <motion.div
-            key={`theme-spark-${activeBackgroundTheme.id}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 3.4, ease: 'easeInOut' }}
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: activeBackgroundTheme.spark }}
-          />
-        </AnimatePresence>
-
-      </div>
-
-      <Navbar
-        theme={
-          {
+        <Navbar
+          theme={{
             id: activeBackgroundTheme.id,
             label: activeBackgroundTheme.label,
-          }
-        }
-        onThemeChipClick={randomizeTheme}
-      />
+          }}
+          onThemeChipClick={randomizeTheme}
+          navLinks={NAV_LINKS}
+          primaryAction={{ label: 'Research', href: '#research' }}
+        />
 
-      <main className="relative z-10">
-        {/* Hero Section */}
-        <section id="home" className="flex min-h-screen flex-col items-center justify-center px-6 pt-20 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            className="eyebrow-badge mb-6 inline-flex items-center gap-2 rounded-full border border-neon-cyan/30 dark:border-neon-cyan/30 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-neon-cyan dark:text-neon-cyan"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-cyan opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-neon-cyan"></span>
-            </span>
-            Available for New Projects
-          </motion.div>
+        <main className="relative z-10">
+          <section id="home" className="flex min-h-screen flex-col items-center justify-center px-6 pt-20 text-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+              className="eyebrow-badge mb-6 inline-flex items-center gap-2 rounded-full border border-neon-cyan/30 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-neon-cyan"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-cyan opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-neon-cyan"></span>
+              </span>
+            AI Engineering Research Lab
+            </motion.div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="hero-title theme-text-primary mb-6 font-display text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 dark:text-white md:text-8xl"
-          >
-            Architecting the <br />
-            <span className="text-gradient">Future of AI</span>
-          </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+              className="hero-title theme-text-primary mb-6 font-display text-5xl font-bold leading-[1.1] tracking-tight text-slate-900 dark:text-white md:text-8xl"
+            >
+              Inventyfie <br />
+              <span className="text-gradient">Research. Engineering. Benchmarks.</span>
+            </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="hero-copy theme-text-secondary mx-auto mb-10 max-w-2xl text-lg text-slate-600 dark:text-white/60 md:text-xl"
-          >
-            High-performance AI software solutions tailored for the next generation of digital innovation. From neural networks to quantum-ready architectures.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="flex flex-col gap-4 sm:flex-row"
-          >
-            <button className="accent-button group flex items-center gap-2 rounded-full bg-neon-cyan text-obsidian px-8 py-4 font-bold transition-all hover:shadow-[0_0_30px_rgba(0,242,255,0.5)] dark:bg-neon-cyan dark:text-obsidian">
-              View Projects
-              <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
-            </button>
-            <button className="secondary-button rounded-full border border-neon-cyan/50 bg-neon-cyan/10 px-8 py-4 font-bold backdrop-blur-sm transition-all hover:bg-neon-cyan/20 dark:border-white/20 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10">
-              Get in Touch
-            </button>
-          </motion.div>
-
-          <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 text-slate-400 dark:text-white/30"
-          >
-            <ChevronDown size={32} />
-          </motion.div>
-        </section>
-
-        {/* Projects Section */}
-        <Section id="projects" className="py-24 px-6">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-16 text-center md:text-left">
-              <h2 className="theme-text-primary mb-4 font-display text-4xl font-bold md:text-6xl text-slate-900 dark:text-white">Selected <span className="text-neon-cyan dark:text-neon-cyan">Works</span></h2>
-              <p className="theme-text-secondary max-w-xl text-slate-600 dark:text-white/50">A showcase of cutting-edge AI implementations across various industries.</p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {PROJECTS.map((project) => (
-                <ProjectCard key={project.title} project={project} />
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        {/* Services Section */}
-        <Section id="services" className="section-panel py-24 px-6 bg-white/[0.02] dark:bg-white/[0.02]">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-16 text-center">
-              <h2 className="theme-text-primary mb-4 font-display text-4xl font-bold md:text-6xl text-slate-900 dark:text-white">Core <span className="text-neon-purple dark:text-neon-purple">Capabilities</span></h2>
-              <p className="theme-text-secondary mx-auto max-w-xl text-slate-600 dark:text-white/50">Specialized expertise in modern AI software development.</p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              {[
-                {
-                  title: "Machine Learning",
-                  desc: "Custom model development, training, and optimization for specific business logic.",
-                  icon: Brain,
-                  color: "text-neon-cyan"
-                },
-                {
-                  title: "AI Integration",
-                  desc: "Seamlessly embedding LLMs and generative AI into existing software ecosystems.",
-                  icon: Cpu,
-                  color: "text-neon-purple"
-                },
-                {
-                  title: "Data Engineering",
-                  desc: "Scalable data pipelines and real-time processing for AI-ready infrastructure.",
-                  icon: Zap,
-                  color: "text-white dark:text-white"
-                }
-              ].map((service) => (
-                <div key={service.title} className="glass rounded-3xl p-8 hover:bg-white/10 dark:hover:bg-white/10 transition-colors">
-                  <service.icon className={cn("mb-6 h-12 w-12", service.color)} />
-                  <h3 className="theme-text-primary mb-4 font-display text-2xl font-bold text-slate-900 dark:text-white">{service.title}</h3>
-                  <p className="theme-text-secondary text-slate-600 dark:text-white/60 leading-relaxed">{service.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Section>
-
-        {/* Neural Academy Section */}
-        <Section id="academy" className="py-24 px-6">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-16 text-center md:text-left">
-              <h2 className="theme-text-primary mb-4 font-display text-4xl font-bold md:text-6xl text-slate-900 dark:text-white">Neural <span className="text-neon-cyan dark:text-neon-cyan">Academy</span></h2>
-              <p className="theme-text-secondary max-w-xl text-slate-600 dark:text-white/50">Comprehensive learning resources on AI, machine learning, and advanced software engineering practices. Level up your knowledge with curated educational content.</p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {ACADEMY_TOPICS.map((topic, index) => (
-                <AcademyCard key={topic.id} topic={topic} index={index} />
-              ))}
-            </div>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.8 }}
+              className="hero-copy theme-text-secondary mx-auto mb-10 max-w-3xl text-lg text-slate-600 dark:text-white/60 md:text-xl"
+            >
+               AI Engineering Research Platform for practical investigations, decision intelligence frameworks, production architecture guides, and implementation-grade case studies.
+            </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="mt-16 flex justify-center"
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+              className="flex flex-col gap-4 sm:flex-row"
             >
-              <button className="group flex items-center gap-2 rounded-full border border-neon-cyan/50 dark:border-neon-cyan/50 bg-neon-cyan/10 dark:bg-neon-cyan/10 px-8 py-4 font-bold text-neon-cyan dark:text-neon-cyan transition-all hover:bg-neon-cyan hover:text-obsidian dark:hover:bg-neon-cyan dark:hover:text-obsidian hover:shadow-[0_0_30px_rgba(0,242,255,0.5)]">
-                View All Topics
-                <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
-              </button>
-            </motion.div>
-          </div>
-        </Section>
-
-        {/* Contact Section */}
-        <Section id="contact" className="py-24 px-6">
-          <div className="mx-auto max-w-4xl glass section-panel rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden">
-            <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-neon-purple/20 dark:bg-neon-purple/20 blur-[100px]" />
-            
-            <h2 className="theme-text-primary mb-6 font-display text-4xl font-bold md:text-7xl text-slate-900 dark:text-white">Let's Build <br />Something <span className="text-neon-cyan dark:text-neon-cyan">Epic</span></h2>
-            <p className="theme-text-secondary mb-12 text-slate-600 dark:text-white/60 text-lg">Ready to transform your vision into an AI-powered reality? Let's connect and discuss your next breakthrough.</p>
-            
-            <div className="flex flex-col items-center gap-8">
-              <a 
-                href="mailto:contact@inventyfie.com" 
-                className="theme-text-primary group flex items-center gap-4 text-2xl font-bold text-slate-900 dark:text-white hover:text-neon-cyan transition-colors md:text-4xl"
+              <a
+                href="#research"
+                className="accent-button group flex items-center gap-2 rounded-full px-8 py-4 font-bold text-white transition-all hover:shadow-[0_0_30px_rgba(0,242,255,0.5)]"
+                style={{ backgroundImage: 'linear-gradient(120deg, var(--theme-button-from), var(--theme-button-to))' }}
               >
-                <Mail size={32} />
-                contact@inventyfie.com
+                Explore Research
+                <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
               </a>
+              <a className="secondary-button rounded-full border px-8 py-4 font-bold backdrop-blur-sm transition-all" href="#case-studies">
+                Browse Case Studies
+              </a>
+              <a className="secondary-button rounded-full border px-8 py-4 font-bold backdrop-blur-sm transition-all" href="#engineering">
+                Engineering Projects
+              </a>
+            </motion.div>
 
-              <div className="flex gap-6">
-                {[
-                  { icon: Linkedin, href: "#" },
-                  { icon: Twitter, href: "#" },
-                  { icon: Github, href: "#" }
-                ].map((social, i) => (
-                  <motion.a
-                    key={i}
-                    href={social.href}
-                    whileHover={{ scale: 1.2, rotate: 5 }}
-                    className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/60 hover:border-neon-cyan hover:text-neon-cyan dark:hover:border-neon-cyan dark:hover:text-neon-cyan transition-colors"
-                  >
-                    <social.icon size={20} />
-                  </motion.a>
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="absolute bottom-10 left-1/2 -translate-x-1/2 text-slate-400 dark:text-white/30"
+            >
+              <ChevronDown size={32} />
+            </motion.div>
+          </section>
+
+          <Section id="search" className="px-6 pb-12">
+            <div className="mx-auto max-w-7xl">
+              <SearchExplorer docs={searchDocs} cmsEntries={cmsEntries} />
+            </div>
+          </Section>
+
+          <Section id="research" className="py-24 px-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Research</p>
+                <h2 className={sectionTitleClass}>Research <span className="text-neon-cyan">Investigations</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Latest Investigation: {heroInvestigation?.title}. Every publication follows a strict engineering research format covering research question, context, methodology, implementation, benchmark data, and future work.
+                </p>
+              </div>
+
+              <div className="grid gap-8 lg:grid-cols-2">
+                {RESEARCH_INVESTIGATIONS.map((item) => (
+                  <article key={item.id} className="theme-card-hover glass section-panel rounded-3xl border border-white/10 p-6">
+                    <h3 className="theme-title-hover mb-3 font-display text-2xl font-bold text-slate-900 dark:text-white">{item.title}</h3>
+                    <p className="mb-4 text-sm leading-relaxed text-slate-700 dark:text-white/70">{item.researchQuestion}</p>
+                    <MetadataStrip metadata={item.metadata} />
+
+                    <details className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <summary className="cursor-pointer text-sm font-semibold uppercase tracking-[0.14em] text-neon-cyan">Open full research structure</summary>
+                      <div className="mt-4 space-y-3 text-sm text-slate-700 dark:text-white/70">
+                        <p><strong>Background:</strong> {item.background}</p>
+                        <p><strong>Business Problem:</strong> {item.businessProblem}</p>
+                        <p><strong>Industry Context:</strong> {item.industryContext}</p>
+                        <p><strong>Research Objective:</strong> {item.researchObjective}</p>
+                        <p><strong>Methodology:</strong> {item.methodology}</p>
+                        <p><strong>Experiment Design:</strong> {item.experimentDesign}</p>
+                        <p><strong>Implementation:</strong> {item.implementation}</p>
+                        <p><strong>Dataset:</strong> {item.dataset}</p>
+                        <p><strong>Benchmark:</strong> {item.benchmark}</p>
+                        <p><strong>Conclusion:</strong> {item.conclusion}</p>
+                        <p><strong>Existing Approaches:</strong> {item.existingApproaches.join(' · ')}</p>
+                        <p><strong>Results:</strong> {item.results.join(' · ')}</p>
+                        <p><strong>Limitations:</strong> {item.limitations.join(' · ')}</p>
+                        <p><strong>Future Work:</strong> {item.futureWork.join(' · ')}</p>
+                        <p><strong>References:</strong> {item.references.join(' · ')}</p>
+                        <p><strong>Related Research:</strong> {item.relatedResearch.join(' · ')}</p>
+                        <div className="flex flex-wrap gap-3 pt-2">
+                          <a href={item.github} target="_blank" rel="noreferrer" className="text-neon-cyan hover:underline">GitHub</a>
+                          <a href={item.downloads} className="text-neon-cyan hover:underline">Downloads</a>
+                        </div>
+                      </div>
+                    </details>
+                  </article>
                 ))}
               </div>
             </div>
-          </div>
-        </Section>
-      </main>
+          </Section>
 
-      <footer className="theme-text-muted py-12 px-6 text-center text-slate-500 dark:text-white/30 border-t border-slate-300 dark:border-white/5">
-        <p className="text-sm uppercase tracking-widest font-medium">
-          © 2026 INVENTYFIE AI SOLUTIONS • INVENTYFIE.COM
-        </p>
-      </footer>
+          <Section id="engineering" className="section-panel py-24 px-6 bg-white/[0.02] dark:bg-white/[0.02]">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Engineering</p>
+                <h2 className={sectionTitleClass}>Engineering <span className="text-neon-purple">Showcases</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Production-grade implementations with architecture rationale, performance evidence, business ROI, security posture, and future roadmap.
+                </p>
+              </div>
+
+              <div className="grid gap-8 lg:grid-cols-2">
+                {ENGINEERING_PROJECTS.map((project, index) => {
+                  const Icon = iconByIndex[index % iconByIndex.length];
+                  return (
+                    <article key={project.id} className="theme-card-hover glass section-panel rounded-3xl border border-white/10 p-6">
+                      <div className="mb-4 flex items-center justify-between gap-4">
+                        <div className="icon-well rounded-lg bg-neon-cyan/10 p-2 text-neon-cyan">
+                          <Icon size={22} />
+                        </div>
+                        <div className="flex gap-3 text-slate-600 dark:text-white/60">
+                          <a href={project.github} target="_blank" rel="noreferrer" className="hover:text-neon-cyan"><Github size={18} /></a>
+                          <a href={project.liveDemo} target="_blank" rel="noreferrer" className="hover:text-neon-cyan"><ArrowRight size={18} /></a>
+                        </div>
+                      </div>
+                      <h3 className="mb-3 font-display text-2xl font-bold text-slate-900 dark:text-white">{project.title}</h3>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Problem Statement:</strong> {project.problemStatement}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Architecture Diagram:</strong> {project.architectureDiagram}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Implementation Details:</strong> {project.implementationDetails}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Business Value:</strong> {project.businessValue}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Estimated ROI:</strong> {project.roi}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Challenges:</strong> {project.challenges.join(' · ')}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Lessons Learned:</strong> {project.lessonsLearned.join(' · ')}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Performance Metrics:</strong> {project.performanceMetrics.join(' · ')}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Cost Considerations:</strong> {project.costConsiderations.join(' · ')}</p>
+                      <p className="mb-3 text-sm text-slate-700 dark:text-white/70"><strong>Security Considerations:</strong> {project.securityConsiderations.join(' · ')}</p>
+                      <p className="mb-4 text-sm text-slate-700 dark:text-white/70"><strong>Future Improvements:</strong> {project.futureImprovements.join(' · ')}</p>
+                      <MetadataStrip metadata={project.metadata} />
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="case-studies" className="py-24 px-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Case Studies</p>
+                <h2 className={sectionTitleClass}>Case Study <span className="text-neon-cyan">Repository</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Business-first case studies spanning {CASE_STUDY_INDUSTRIES.join(', ')} with practical AI opportunity analysis and implementation guidance.
+                </p>
+              </div>
+
+              <div className="grid gap-8 lg:grid-cols-2">
+                {CASE_STUDIES.map((study) => (
+                  <article key={study.id} className="theme-card-hover glass rounded-3xl border border-white/10 p-6">
+                    <h3 className="mb-2 font-display text-2xl font-bold text-slate-900 dark:text-white">{study.title}</h3>
+                    <p className="mb-3 text-xs uppercase tracking-[0.14em] text-neon-cyan">{study.industry}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Business Problem:</strong> {study.businessProblem}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Current Industry Approach:</strong> {study.currentIndustryApproach}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Pain Points:</strong> {study.painPoints.join(' · ')}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>AI Opportunity:</strong> {study.aiOpportunity}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Architecture:</strong> {study.architecture}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Implementation:</strong> {study.implementation}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Benefits:</strong> {study.benefits.join(' · ')}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Risks:</strong> {study.risks.join(' · ')}</p>
+                    <p className="mb-4 text-sm text-slate-700 dark:text-white/70"><strong>Estimated ROI:</strong> {study.estimatedRoi}</p>
+                    <p className="mb-4 text-sm text-slate-700 dark:text-white/70"><strong>Recommended Solution:</strong> {study.recommendedSolution}</p>
+                    <MetadataStrip metadata={study.metadata} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="benchmarks" className="section-panel py-24 px-6 bg-white/[0.02] dark:bg-white/[0.02]">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Benchmarks</p>
+                <h2 className={sectionTitleClass}>Benchmark <span className="text-neon-purple">Center</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Comparative studies across embedding models, LLMs, SLMs, vector databases, chunking strategies, RAG frameworks, agent frameworks, and cloud providers.
+                </p>
+              </div>
+
+              <div className="grid gap-8 lg:grid-cols-2">
+                {BENCHMARK_STUDIES.map((benchmark) => (
+                  <article key={benchmark.id} className="theme-card-hover glass rounded-3xl border border-white/10 p-6">
+                    <h3 className="mb-3 font-display text-2xl font-bold text-slate-900 dark:text-white">{benchmark.title}</h3>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Category:</strong> {benchmark.category}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Environment:</strong> {benchmark.environment}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Dataset:</strong> {benchmark.dataset}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Methodology:</strong> {benchmark.methodology}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Results:</strong> {benchmark.results.join(' · ')}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Charts:</strong> {benchmark.charts.join(' · ')}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Metrics:</strong> {benchmark.metrics.join(' · ')}</p>
+                    <p className="mb-4 text-sm text-slate-700 dark:text-white/70"><strong>Final Recommendation:</strong> {benchmark.finalRecommendation}</p>
+                    <MetadataStrip metadata={benchmark.metadata} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="decision-frameworks" className="py-24 px-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Decision Frameworks</p>
+                <h2 className={sectionTitleClass}>Decision <span className="text-neon-cyan">Framework Library</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Signature decision intelligence guides answering: Should I Use AI, Machine Learning, RAG, AI Agents, Fine-Tuning, Spark, SQL, or Vector Databases?
+                </p>
+              </div>
+
+              <div className="grid gap-8 lg:grid-cols-2">
+                {DECISION_FRAMEWORKS.map((framework) => (
+                  <article key={framework.id} className="theme-card-hover glass rounded-3xl border border-white/10 p-6">
+                    <h3 className="mb-3 font-display text-2xl font-bold text-slate-900 dark:text-white">{framework.title}</h3>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Decision Tree:</strong> {framework.decisionTree.join(' -> ')}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Business Considerations:</strong> {framework.businessConsiderations.join(' · ')}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Technical Considerations:</strong> {framework.technicalConsiderations.join(' · ')}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Cost:</strong> {framework.cost}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Complexity:</strong> {framework.complexity}</p>
+                    <p className="mb-2 text-sm text-slate-700 dark:text-white/70"><strong>Recommended Architecture:</strong> {framework.recommendedArchitecture}</p>
+                    <p className="mb-4 text-sm text-slate-700 dark:text-white/70"><strong>When NOT to Use:</strong> {framework.whenNotToUse.join(' · ')}</p>
+                    <MetadataStrip metadata={framework.metadata} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="research-library" className="section-panel py-24 px-6 bg-white/[0.02] dark:bg-white/[0.02]">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Research Library</p>
+                <h2 className={sectionTitleClass}>Research <span className="text-neon-purple">Library</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Curated domain taxonomy replacing the academy section with category-led research navigation.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {RESEARCH_LIBRARY_CATEGORIES.map((category) => (
+                  <div key={category} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-700 dark:text-white/70">
+                    {category}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="research-journal" className="py-24 px-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Research Journal</p>
+                <h2 className={sectionTitleClass}>Research <span className="text-neon-cyan">Journal</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Chronological logs of observations, experiments, failures, interesting papers, future topics, and open questions.
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                {RESEARCH_JOURNAL.map((entry) => (
+                  <article key={entry.id} className="glass rounded-3xl border border-white/10 p-6">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">{entry.title}</h3>
+                      <span className="text-xs uppercase tracking-[0.14em] text-neon-cyan">{entry.date} · {entry.kind}</span>
+                    </div>
+                    <p className="mb-4 text-sm text-slate-700 dark:text-white/70">{entry.note}</p>
+                    <MetadataStrip metadata={entry.metadata} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="open-source" className="section-panel py-24 px-6 bg-white/[0.02] dark:bg-white/[0.02]">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Open Source</p>
+                <h2 className={sectionTitleClass}>Open Source <span className="text-neon-purple">Hub</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Repositories, libraries, datasets, templates, utilities, reusable components, and research tools.
+                </p>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {OPEN_SOURCE_ITEMS.map((item) => (
+                  <article key={item.id} className="glass rounded-3xl border border-white/10 p-6">
+                    <p className="mb-2 text-xs uppercase tracking-[0.14em] text-neon-cyan">{item.kind}</p>
+                    <h3 className="mb-2 font-display text-2xl font-semibold text-slate-900 dark:text-white">{item.title}</h3>
+                    <p className="mb-4 text-sm text-slate-700 dark:text-white/70">{item.summary}</p>
+                    <a href={item.link} target="_blank" rel="noreferrer" className="mb-4 inline-block text-neon-cyan hover:underline">Open Repository</a>
+                    <MetadataStrip metadata={item.metadata} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="resources" className="py-24 px-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Resources</p>
+                <h2 className={sectionTitleClass}>Resources <span className="text-neon-cyan">Library</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Curated books, research papers, conferences, datasets, benchmarks, communities, and learning paths.
+                </p>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {RESOURCE_ITEMS.map((item) => (
+                  <article key={item.id} className="glass rounded-3xl border border-white/10 p-6">
+                    <p className="mb-2 text-xs uppercase tracking-[0.14em] text-neon-cyan">{item.kind}</p>
+                    <h3 className="mb-2 font-display text-2xl font-semibold text-slate-900 dark:text-white">{item.title}</h3>
+                    <p className="mb-4 text-sm text-slate-700 dark:text-white/70">{item.summary}</p>
+                    <a href={item.link} target="_blank" rel="noreferrer" className="mb-4 inline-block text-neon-cyan hover:underline">Open Resource</a>
+                    <MetadataStrip metadata={item.metadata} />
+                  </article>
+                ))}
+              </div>
+            </div>
+          </Section>
+
+          <Section id="admin" className="section-panel py-24 px-6 bg-white/[0.02] dark:bg-white/[0.02]">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Admin</p>
+                <h2 className={sectionTitleClass}>Admin <span className="text-neon-purple">Panel</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Lightweight CMS for creating Articles, Research, Case Studies, Projects, Resources, and Benchmarks in Markdown with image uploads, code snippets, and diagram blocks.
+                </p>
+              </div>
+
+              <Suspense fallback={<div className="glass rounded-3xl border border-white/10 p-8 text-sm text-slate-700 dark:text-white/70">Loading content studio...</div>}>
+                <AdminPanel
+                  entries={cmsEntries}
+                  onSave={(entry) => setCmsEntries((prev) => [entry, ...prev])}
+                  onDelete={(id) => setCmsEntries((prev) => prev.filter((entry) => entry.id !== id))}
+                />
+              </Suspense>
+
+              {cmsEntries.length > 0 ? (
+                <div className="mt-8 grid gap-6 md:grid-cols-2">
+                  {cmsEntries.slice(0, 4).map((entry) => (
+                    <article key={entry.id} className="glass rounded-3xl border border-white/10 p-6">
+                      <p className="mb-2 text-xs uppercase tracking-[0.14em] text-neon-cyan">{entry.contentType}</p>
+                      <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">{entry.title}</h3>
+                      <p className="mb-4 text-sm text-slate-700 dark:text-white/70">{entry.summary}</p>
+                      <MarkdownRenderer content={entry.markdown.slice(0, 450)} />
+                      <div className="mt-4">
+                        <MetadataStrip metadata={entry.metadata} />
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </Section>
+
+          <Section id="about" className="py-24 px-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / About</p>
+                <h2 className={sectionTitleClass}>About <span className="text-neon-cyan">Inventyfie</span></h2>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <article className="glass rounded-3xl border border-white/10 p-6">
+                  <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">Mission</h3>
+                  <p className="mb-4 text-sm text-slate-700 dark:text-white/70">{ABOUT_CONTENT.mission}</p>
+                  <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">Vision</h3>
+                  <p className="text-sm text-slate-700 dark:text-white/70">{ABOUT_CONTENT.vision}</p>
+                </article>
+
+                <article className="glass rounded-3xl border border-white/10 p-6">
+                  <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">Publication Philosophy</h3>
+                  <p className="mb-4 text-sm text-slate-700 dark:text-white/70">{ABOUT_CONTENT.publicationPhilosophy}</p>
+                  <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">Founder Story</h3>
+                  <p className="text-sm text-slate-700 dark:text-white/70">{ABOUT_CONTENT.founderStory}</p>
+                </article>
+
+                <article className="glass rounded-3xl border border-white/10 p-6">
+                  <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">Research Principles</h3>
+                  <p className="text-sm text-slate-700 dark:text-white/70">{ABOUT_CONTENT.researchPrinciples.join(' · ')}</p>
+                  <h3 className="mb-3 mt-5 font-display text-2xl font-semibold text-slate-900 dark:text-white">Engineering Principles</h3>
+                  <p className="text-sm text-slate-700 dark:text-white/70">{ABOUT_CONTENT.engineeringPrinciples.join(' · ')}</p>
+                </article>
+
+                <article className="glass rounded-3xl border border-white/10 p-6">
+                  <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">Roadmap</h3>
+                  <p className="mb-4 text-sm text-slate-700 dark:text-white/70">{ABOUT_CONTENT.roadmap.join(' · ')}</p>
+                  <h3 className="mb-3 font-display text-2xl font-semibold text-slate-900 dark:text-white">Future Modules</h3>
+                  <p className="text-sm text-slate-700 dark:text-white/70">{FUTURE_MODULES.join(' · ')}</p>
+                </article>
+              </div>
+            </div>
+          </Section>
+
+          <Section id="contact" className="py-24 px-6">
+            <div className="mx-auto max-w-4xl glass section-panel rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden">
+              <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-neon-purple/20 blur-[100px]" />
+              <h2 className="theme-text-primary mb-6 font-display text-4xl font-bold md:text-7xl text-slate-900 dark:text-white">
+                Contact <br />
+                <span className="text-neon-cyan">Research Team</span>
+              </h2>
+              <p className="theme-text-secondary mb-12 text-slate-600 dark:text-white/60 text-lg">
+                For collaboration, enterprise research programs, benchmark requests, publication partnerships, or technical inquiry.
+              </p>
+
+              <div className="flex flex-col items-center gap-8">
+                <a
+                  href="mailto:contact@inventyfie.com"
+                  className="theme-text-primary group flex items-center gap-4 text-2xl font-bold text-slate-900 dark:text-white hover:text-neon-cyan transition-colors md:text-4xl"
+                >
+                  <Mail size={32} />
+                  contact@inventyfie.com
+                </a>
+
+                <div className="flex gap-6">
+                  {[
+                    { icon: Linkedin, href: '#' },
+                    { icon: Twitter, href: '#' },
+                    { icon: Github, href: 'https://github.com/inventyfie' },
+                  ].map((social, i) => (
+                    <motion.a
+                      key={i}
+                      href={social.href}
+                      whileHover={{ scale: 1.2, rotate: 5 }}
+                      className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/60 hover:border-neon-cyan hover:text-neon-cyan transition-colors"
+                    >
+                      <social.icon size={20} />
+                    </motion.a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Section>
+        </main>
+
+        <footer className="theme-text-muted py-12 px-6 text-center text-slate-500 dark:text-white/30 border-t border-slate-300 dark:border-white/5">
+          <p className="text-sm uppercase tracking-widest font-medium">
+            © 2026 INVENTYFIE RESEARCH LAB · AI ENGINEERING RESEARCH PLATFORM
+          </p>
+        </footer>
       </motion.div>
     </ThemeProvider>
   );

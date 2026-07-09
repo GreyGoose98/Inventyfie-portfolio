@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Inventyfie Research Journal</title>
+    <link>https://inventyfie.com/</link>
+    <description>Latest investigations, benchmarks, and practical AI engineering research notes from Inventyfie.</description>
+    <language>en-us</language>
+    <item>
+      <title>RAG vs Long-Context LLMs for Industrial Diagnostics</title>
+      <link>https://inventyfie.com/#research</link>
+      <guid>https://inventyfie.com/#research-rag-long-context</guid>
+      <pubDate>Sun, 05 Jul 2026 00:00:00 GMT</pubDate>
+      <description>Comparative study of retrieval-augmented generation versus long-context prompting under production reliability constraints.</description>
+    </item>
+    <item>
+      <title>Agent Framework Evaluation Under Governance Constraints</title>
+      <link>https://inventyfie.com/#research</link>
+      <guid>https://inventyfie.com/#research-agent-framework-eval</guid>
+      <pubDate>Wed, 01 Jul 2026 00:00:00 GMT</pubDate>
+      <description>Enterprise benchmark on governance visibility and reliability for tool-using AI agents.</description>
+    </item>
+  </channel>
+</rss>
