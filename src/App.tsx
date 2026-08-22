@@ -985,7 +985,7 @@ export default function App() {
 
               <div className="flex flex-col items-center gap-8">
                 <a
-                  href="mailto:contact@inventyfie.com"
+                  href="mailto:inventyfie@gmail.com"
                   className="theme-text-primary group flex items-center gap-4 text-2xl font-bold text-slate-900 dark:text-white hover:text-neon-cyan transition-colors md:text-4xl"
                 >
                   <Mail size={32} />
