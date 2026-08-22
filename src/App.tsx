@@ -630,6 +630,47 @@ export default function App() {
             </div>
           </Section>
 
+          <Section id="tutorial" className="py-24 px-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="mb-16 text-center md:text-left">
+                <p className="mb-3 text-xs uppercase tracking-[0.2em] text-neon-cyan">Home / Tutorial</p>
+                <h2 className={sectionTitleClass}>Learning <span className="text-neon-cyan">Tutorials</span></h2>
+                <p className="theme-text-secondary max-w-3xl text-slate-600 dark:text-white/50">
+                  Short guided walkthroughs to help you read research, compare architectures, and turn experiments into production-ready systems.
+                </p>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-3">
+                <article className="glass rounded-3xl border border-white/10 p-6">
+                  <p className="mb-2 text-xs uppercase tracking-[0.14em] text-neon-cyan">01 · Read</p>
+                  <h3 className="mb-3 font-display text-2xl font-bold text-slate-900 dark:text-white">How to evaluate a research brief</h3>
+                  <p className="mb-4 text-sm text-slate-700 dark:text-white/70">
+                    Start with the problem, benchmark, assumptions, and business constraints before judging whether an AI pattern is suitable for your team.
+                  </p>
+                  <a href="#research" className="text-neon-cyan hover:underline">Open research section</a>
+                </article>
+
+                <article className="glass rounded-3xl border border-white/10 p-6">
+                  <p className="mb-2 text-xs uppercase tracking-[0.14em] text-neon-cyan">02 · Compare</p>
+                  <h3 className="mb-3 font-display text-2xl font-bold text-slate-900 dark:text-white">How to compare AI architectures</h3>
+                  <p className="mb-4 text-sm text-slate-700 dark:text-white/70">
+                    Map architecture decisions against latency, cost, reliability, observability, governance, and operational complexity before choosing a stack.
+                  </p>
+                  <a href="#decision-frameworks" className="text-neon-cyan hover:underline">Open decision frameworks</a>
+                </article>
+
+                <article className="glass rounded-3xl border border-white/10 p-6">
+                  <p className="mb-2 text-xs uppercase tracking-[0.14em] text-neon-cyan">03 · Ship</p>
+                  <h3 className="mb-3 font-display text-2xl font-bold text-slate-900 dark:text-white">How to turn experiments into production</h3>
+                  <p className="mb-4 text-sm text-slate-700 dark:text-white/70">
+                    Move from proof-of-concept to production by validating metrics, adding safety guardrails, and measuring business impact with iterative releases.
+                  </p>
+                  <a href="#engineering" className="text-neon-cyan hover:underline">See engineering showcases</a>
+                </article>
+              </div>
+            </div>
+          </Section>
+
           <Section id="engineering" className="section-panel py-24 px-6 bg-white/[0.02] dark:bg-white/[0.02]">
             <div className="mx-auto max-w-7xl">
               <div className="mb-16 text-center md:text-left">
